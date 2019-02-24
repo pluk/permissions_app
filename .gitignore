@@ -1,0 +1,4 @@
+*.pyc
+*.prefs
+*.project
+.idea/

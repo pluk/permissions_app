@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+
+  mongo:
+    image: mongo
+    restart: always
+    volumes:
+      - "./data/db:/data/db"
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  api:
+    build: ./docker-images/python
+    restart: always
+    volumes:
+      - "./parser_service/:/var/permissions_app"
+    ports:
+      - "80:80"
+    command: /var/permissions_app/server.py
+
+  db_watcher:
+    build: ./docker-images/python
+    restart: always
+    volumes:
+      - "./parser_service:/var/permissions_app"
+    command: /var/permissions_app/db_watcher.py
