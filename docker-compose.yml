@@ -19,7 +19,7 @@ services:
     volumes:
       - "./parser_service/:/var/permissions_app"
     ports:
-      - "80:80"
+      - "8080:8080"
     command: /var/permissions_app/server.py
 
   db_watcher:
@@ -28,3 +28,12 @@ services:
     volumes:
       - "./parser_service:/var/permissions_app"
     command: /var/permissions_app/db_watcher.py
+
+  nginx:
+    build: ./docker-images/nginx
+    ports:
+      - "80:80"
+    command: nginx -g "daemon off;"
+    restart: always
+    volumes:
+      - "./js-app/build/:/var/www/html"

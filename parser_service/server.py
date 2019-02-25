@@ -29,8 +29,27 @@ async def handle(request):
         }
     )
 
+def set_cors_headers(request, response):
+    response.headers['Access-Control-Allow-Origin'] = request.headers.get(
+        'Origin', '*'
+    )
+    response.headers['Access-Control-Allow-Methods'] = 'GET,OPTIONS'
 
-app = web.Application()
+    return response
+
+
+async def cors_factory (app, handler):
+    async def cors_handler(request):
+        if request.method == 'OPTIONS':
+            response = web.Response(status=204)
+            return set_cors_headers(request, response)
+
+        response = await handler(request)
+        return set_cors_headers(request, response)
+
+    return cors_handler
+
+app = web.Application(middlewares=[cors_factory])
 app.add_routes(routes)
 
-web.run_app(app, host='0.0.0.0', port=80)
+web.run_app(app, host='0.0.0.0', port=8080)
