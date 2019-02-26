@@ -3,7 +3,8 @@ import aiohttp
 import re
 import json
 
-
+class ParserError(Exception):
+    pass
 
 class GooglePlayParser:
     __google_play_api_url = 'https://play.google.com/_/PlayStoreUi/data/batchexecute'
@@ -24,19 +25,30 @@ class GooglePlayParser:
         self.__permissions_tokens_regexp = re.compile(r'\"(\[.*\\n)\"')
 
     async def get_permissions(self, app_id, hl):
-        dirty_data = await self.get_dirty_response(app_id, hl)
-        data = self.clear_data(dirty_data)
+        try:
+            dirty_data = await self.__get_dirty_response(app_id, hl)
 
-        permissions = self.parse_permissions(data)
+            if not dirty_data:
+                return None
+
+            data = self.__clear_data(dirty_data)
+
+            permissions = self.__parse_permissions(data)
+        except Exception:
+            raise ParserError
 
         return permissions
 
-    async def get_dirty_response(self, app_id, hl):
+    async def __get_dirty_response(self, app_id, hl):
         params = self.__prepare_params(app_id, hl)
 
         async with aiohttp.ClientSession() as session:
             async with session.post(self.__google_play_api_url,
                                     data=params) as resp:
+
+                if resp.status != 200:
+                    return None
+
                 data = await resp.read()
                 return data.decode()
 
@@ -47,8 +59,12 @@ class GooglePlayParser:
         }
         return {**self.__default_params, **request_params}
 
-    def clear_data(self, data):
+    def __clear_data(self, data):
         raw = self.__permissions_tokens_regexp.findall(data)
+
+        if not raw:
+            return None
+
         json_data = raw[0].replace('\\n', '').replace('\\', '')
         return json.loads(json_data)
 
@@ -67,16 +83,15 @@ class GooglePlayParser:
 
         return permissions
 
-    def parse_permissions(self, data):
-
+    def __parse_permissions(self, data):
         perms = self.__parse_block(data[0])
         others = self.__parse_block(data[1])
 
-        perms.append(self.parse_other(others, data))
+        perms.append(self.__parse_other(others, data))
 
         return perms
 
-    def parse_other(self, others, data):
+    def __parse_other(self, others, data):
         if len(others) == 1:
             return others[0]
 

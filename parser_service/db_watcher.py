@@ -3,7 +3,7 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 import asyncio
 import time
-from parser import GooglePlayParser
+from parser import GooglePlayParser, ParserError
 
 
 client = AsyncIOMotorClient('mongo', 27017, username='root', password='example')
@@ -24,10 +24,16 @@ async def do_insert(app_id, hl, permissions):
 
 async def do_find():
     async for document in db.permission_queries.find():
-        permissions = await parser.get_permissions(document['appId'], document['hl'])
-        await do_insert(document['appId'], document['hl'], permissions)
+        try:
+            permissions = await parser.get_permissions(document['appId'], document['hl'])
 
-        await remove_query(document['appId'])
+            if permissions:
+                await do_insert(document['appId'], document['hl'], permissions)
+        except ParserError as e:
+            #logging
+            print(e)
+        finally:
+            await remove_query(document['appId'])
 
 
 async def f():

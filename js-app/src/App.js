@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import { Container, List, Form, Image, Header } from 'semantic-ui-react'
+import { Container, List, Form, Image, Header, Message } from 'semantic-ui-react'
 import 'semantic-ui-css/semantic.min.css'
 
 import ApiClient from './ApiClient';
@@ -17,7 +17,8 @@ class App extends Component {
 
     this.state = {
         permissions: [],
-        url: ''
+        url: '',
+        error: ''
     };
   }
 
@@ -38,6 +39,7 @@ class App extends Component {
         </Form>
 
         {this._renderList(this.state.permissions)}
+        {this._renderMessage(this.state.error)}
 
       </Container>
     );
@@ -47,7 +49,8 @@ class App extends Component {
 
   handleGetPermissions = (e) => {
     this.setState({
-      permissions: []
+      permissions: [],
+      error: ''
     });
     var parsedUrl = queryString.parseUrl(this.state.url)
 
@@ -65,6 +68,11 @@ class App extends Component {
             this.setState({
                 permissions: response.data.permissions
             });
+        })
+        .catch((error) => {
+          this.setState({
+                error: error
+            });
         });
   };
 
@@ -80,6 +88,18 @@ class App extends Component {
     );
   };
 
+  _renderMessage = (error) => {
+    if (error === '') {
+      return '';
+    }
+    return (
+      <Message negative>
+        <Message.Header>Permissions not found</Message.Header>
+        <p>Try later</p>
+      </Message>
+    );
+  };
+
   _renderPermission = (permission, i) => {
     return (
       <List.Item key={i}>
@@ -87,7 +107,12 @@ class App extends Component {
         <List.Content>
           <List.Header>{ permission.title }</List.Header>
           <List bulleted>
-            {permission.permissions.map((perm, j) => { return (<List.Item key={j}><List.Description>{perm}</List.Description></List.Item>) })}
+            {permission.permissions.map((perm, j) => {
+              return (
+                <List.Item key={j}>
+                  <List.Description>{perm}</List.Description>
+                </List.Item>)
+              })}
           </List>
         </List.Content>
       </List.Item>
